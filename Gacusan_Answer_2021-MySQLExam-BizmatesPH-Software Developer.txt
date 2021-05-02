@@ -1,0 +1,35 @@
+1)
+SELECT CONCAT('T00000',trn_teacher.id) AS ID, trn_teacher.nickname AS Nickname, 
+CASE 
+	WHEN trn_teacher.status = 1 THEN 'Active'
+	WHEN trn_teacher.status = 2 THEN 'Deactivated'
+	ELSE 'Discontinued'
+END AS Status,
+STUFF((SELECT '/' +  
+	CASE
+		WHEN role = 1 THEN 'Trainer'
+		WHEN role = 2 THEN 'Assessor'
+		ELSE 'Staff'
+	END
+        FROM trn_teacher_role
+        WHERE trn_teacher_role.teacher_id = trn_teacher.id
+        FOR XML PATH('')), 1, 1, '') [Roles]
+FROM trn_teacher
+INNER JOIN trn_teacher_role
+ON (trn_teacher_role.teacher_id = trn_teacher.id);
+
+2)
+SELECT trn_teacher.id as ID, trn_teacher.nickname AS Nickname
+	, SUM(CASE WHEN trn_time_table.status = 1 THEN 1 ELSE 0) AS Open
+	, SUM(CASE WHEN trn_time_table.status = 3 THEN 1 ELSE 0) AS RESERVED
+	, SUM(CASE WHEN trn_evaluation.result = 1 THEN 1 ELSE 0) AS Taught
+	, SUM(CASE WHEN trn_evaluation.result = 2 THEN 1 ELSE 0) AS No Show
+FROM trn_teacher
+INNER JOIN trn_teacher_role ON (trn_teacher_role.teacher_id = trn_teacher.id)
+INNER JOIN trn_time_table ON (trn_time_table.teacher_id = trn_teacher_role.teacher_id)
+INNER JOIN trn_evaluation ON (trn_evaluation.teacher_id = trn_time_table.teacher_id)
+WHERE (trn_teacher.status = 1 OR trn_teacher.status = 2) 
+AND (trn_teacher_role.role = 1 AND trn_teacher_role.role = 2);
+
+
+	
